@@ -1,0 +1,47 @@
+// Pega endereço preço e informações
+const puppeteer = require('puppeteer');
+
+async function scrape() {
+  const browser = await puppeteer.launch();
+  const page = await browser.newPage();
+
+  // Configura o cabeçalho para simular uma solicitação de navegador
+  await page.setExtraHTTPHeaders({
+    'User-Agent': 'Mozilla/5.0'
+  });
+
+  // Navega até a página desejada
+  await page.goto('https://www.vivareal.com.br/venda/espirito-santo/guarapari/?pagina=2#onde=Brasil,Esp%C3%ADrito%20Santo,Guarapari,,,,,,BR%3EEspirito%20Santo%3ENULL%3EGuarapari,,,', { waitUntil: 'domcontentloaded' });
+
+  // Espera até que os elementos desejados estejam completamente carregados
+  await page.waitForSelector('span.property-card__address');
+
+  // Extrai os endereços, detalhes e preços das propriedades
+  const properties = await page.evaluate(() => {
+    const enderecoElements = [...document.querySelectorAll("span.property-card__address")];
+    const detalheElements = [...document.querySelectorAll("ul.property-card__details")];
+    const precoElements = [...document.querySelectorAll("div.property-card__price.js-property-card-prices.js-property-card__price-small")];
+    
+    // Mapeia os endereços, detalhes e preços em um array de objetos
+    return enderecoElements.map((addressElement, index) => {
+      return {
+        Endereco: addressElement.textContent.trim(),
+        Detalhes: detalheElements[index].textContent.trim(),
+        Preco: precoElements[index].textContent.trim() // Assume que o preço está no mesmo índice
+      };
+    });
+  });
+
+  // Fecha o navegador
+  await browser.close();
+
+  // Imprime as informações das propriedades
+  if (properties.length > 0) {
+    console.log('Propriedades encontradas:\n', properties);
+  } else {
+    console.log('Nenhuma propriedade encontrada.');
+  }
+}
+
+// Chama a função para iniciar a raspagem
+scrape();
